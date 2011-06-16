@@ -53,7 +53,7 @@ class Controller_Charougna_Dispatcher extends Controller
    */
   protected function _can_perform_action($action_name)
   {
-    if ( ! array_key_exists($action_name, $this->_dispatcher_actions))
+    if ( ! $this->_is_action_configured($action_name))
     {
       throw new Kohana_Exception('Action «'.$action_name.'» is not configured.');
     }
@@ -218,5 +218,22 @@ class Controller_Charougna_Dispatcher extends Controller
     return 'unknown';
   }
 
+
+  /**
+   * Check if the action is configured
+   *
+   * @param string $action_name Action name
+   *
+   * @return bool
+   */
+  protected function _is_action_configured($action_name)
+  {
+    if (array_key_exists($action_name, $this->_dispatcher_actions))
+    {
+      return TRUE;
+    }
+
+    return FALSE;
+  }
 
 } // End class Charougna_Dispatcher
