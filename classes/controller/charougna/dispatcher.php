@@ -171,6 +171,24 @@ class Controller_Charougna_Dispatcher extends Controller
 
 
   /**
+   * Find configured actions for a given action
+   *
+   * @param string $action_name action name
+   *
+   * @return array
+   */
+  protected function _get_action_methods($action_name)
+  {
+    if ( ! $this->_is_action_configured($action_name))
+    {
+      return array();
+    }
+
+    return $this->_dispatcher_actions[$action_name];
+  }
+
+
+  /**
    * Find calling method
    *
    * @return int constant METHOD_*
@@ -199,11 +217,18 @@ class Controller_Charougna_Dispatcher extends Controller
   /**
    * Find calling method name
    *
+   * @param Controller_Dispatch::METHOD_* $method optional method
+   *
    * @return string
    */
-  protected function _get_method_name()
+  protected function _get_method_name($method = NULL)
   {
-    switch ($this->_get_method())
+    if ($method == NULL)
+    {
+      $method = $this->_get_method();
+    }
+
+    switch ($method)
     {
       case $this::METHOD_GET :
         return 'get';
