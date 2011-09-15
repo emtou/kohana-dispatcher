@@ -110,19 +110,22 @@ class Controller_Charougna_Dispatcher extends Controller
     $init_method_name = '_action_'.$action_name.'_init';
     if (method_exists($this, $init_method_name))
     {
-      $this->$init_method_name($params);
+      if ($this->$init_method_name($params) === FALSE)
+        return;
     }
     $init_method_name = '_action_'.$action_name.'_init_'.$this->_get_method_name();
     if (method_exists($this, $init_method_name))
     {
-      $this->$init_method_name($params);
+      if ($this->$init_method_name($params) === FALSE)
+        return;
     }
 
     // Perform
     $perform_method_name = '_action_'.$action_name.'_'.$this->_get_method_name();
     if (method_exists($this, $perform_method_name))
     {
-      $this->$perform_method_name($params);
+      if ($this->$perform_method_name($params) === FALSE)
+        return;
     }
     else
     {
@@ -133,12 +136,14 @@ class Controller_Charougna_Dispatcher extends Controller
     $end_method_name = '_action_'.$action_name.'_end';
     if (method_exists($this, $end_method_name))
     {
-      $this->$end_method_name($params);
+      if ($this->$end_method_name($params) === FALSE)
+        return;
     }
     $end_method_name = '_action_'.$action_name.'_end_'.$this->_get_method_name();
     if (method_exists($this, $end_method_name))
     {
-      $this->$end_method_name($params);
+      if ($this->$end_method_name($params) === FALSE)
+        return;
     }
   }
 
