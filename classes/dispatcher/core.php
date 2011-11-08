@@ -240,6 +240,22 @@ abstract class Dispatcher_Core extends Controller
 
 
   /**
+   * Returns the action's class' name if configured
+   *
+   * @param string $name name of the action
+   *
+   * @return string class name or empty string
+   */
+  protected function _get_action_classname($name)
+  {
+    if (isset($this->_action_classnames[$name]))
+      return $this->_action_classnames[$name];
+
+    return '';
+  }
+
+
+  /**
    * Returns the action's instance if configured
    *
    * @param string $name name of the action
@@ -252,7 +268,7 @@ abstract class Dispatcher_Core extends Controller
       return $this->_action_instances[$name];
 
     // Instanciate
-    if (isset($this->_action_classnames[$name]))
+    if ($this->_get_action_classname($name) != '')
     {
       $this->_instanciate_action($name);
     }
@@ -350,16 +366,17 @@ abstract class Dispatcher_Core extends Controller
    */
   protected function _instanciate_action($name)
   {
-    if ( ! class_exists($this->_action_classnames[$name]))
+    if ( ! class_exists($this->_get_action_classname($name)))
     {
       throw new Kohana_Exception(
         'Can\'t perform dispatcher\'s action: '.
         'class :classname: does not exist',
-        array(':classname' => $this->_action_classnames[$name])
+        array(':classname' => $this->_get_action_classname($name))
       );
     }
 
-    $this->_action_instances[$name] = new $this->_action_classnames[$name];
+    $action_classname               = $this->_get_action_classname($name);
+    $this->_action_instances[$name] = new $action_classname;
 
     $this->_action_instances[$name]->controller = $this;
   }
