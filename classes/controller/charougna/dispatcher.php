@@ -38,7 +38,44 @@ class Controller_Charougna_Dispatcher extends Controller
   const METHOD_AJAX_GET  = 3;
   const METHOD_AJAX_POST = 4;
 
+  protected $_action_classnames  = array(); /** list of Dispatcher_ControllerAction class names */
+  protected $_action_instances   = array(); /** list of Dispatcher_ControllerAction instances */
   protected $_dispatcher_actions = array();
+
+
+  /**
+   * Call specific action method
+   *
+   * @param string $name    name of the action
+   * @param method $phase   name of the action's phase
+   * @param method $method  name of the action's method
+   * @param array  &$params Optional action parameters
+   *
+   * @return bool continue action process ?
+   *
+   * @todo remove controler's method name HACK
+   */
+  protected function _call_action($name, $phase, $method, array & $params = NULL)
+  {
+    $controler_methodname = '_action_'.$name;
+    // @hack : old API method naming ('main' and 'global' stripped)
+    $controler_methodname .= (($phase != 'main')?('_'.$phase):'');
+    $controler_methodname .= (($method != 'global')?('_'.$method):'');
+
+    $action_instance = $this->_get_action_instance($name);
+    if ($action_instance instanceof Dispatcher_Action
+        and $action_instance->perform($phase, $method, $params) === FALSE)
+    {
+      return FALSE;
+    }
+    elseif (method_exists($this, $controler_methodname)
+        and $this->{$controler_methodname}($params) === FALSE)
+    {
+      return FALSE;
+    }
+
+    return TRUE;
+  }
 
 
   /**
@@ -70,13 +107,18 @@ class Controller_Charougna_Dispatcher extends Controller
   /**
    * Configure an action with a set of allowed methods
    *
-   * @param string $action_name     Action name
-   * @param array  $allowed_methods Methods
+   * @param string $action_name      Action name
+   * @param array  $allowed_methods  Methods
+   * @param string $action_classname Optional Dispatcher ControllerAction class name
    *
    * @return null
    */
-  protected function _configure_action($action_name, array $allowed_methods)
+  protected function _configure_action($action_name, array $allowed_methods, $action_classname = '')
   {
+    if ($action_classname != '')
+    {
+      $this->_action_classnames[$action_name] = $action_classname;
+    }
     $this->_dispatcher_actions[$action_name] = $allowed_methods;
   }
 
@@ -87,9 +129,6 @@ class Controller_Charougna_Dispatcher extends Controller
    * @param array &$params Optional parameters
    *
    * @return bool
-   *
-   * @throws Kohana_Exception Can't perform action : X
-   * @throws Kohana_Exception Can't perform action
    */
   protected function _do_action(array & $params = NULL)
   {
@@ -105,46 +144,71 @@ class Controller_Charougna_Dispatcher extends Controller
       throw new Kohana_Exception('Can\'t perform action : '.$exception->getMessage());
     }
 
+    if ($this->_do_action_init($action_name, $params) === FALSE)
+      return;
 
-    // Init
-    $init_method_name = '_action_'.$action_name.'_init';
-    if (method_exists($this, $init_method_name))
-    {
-      if ($this->$init_method_name($params) === FALSE)
-        return;
-    }
-    $init_method_name = '_action_'.$action_name.'_init_'.$this->_get_method_name();
-    if (method_exists($this, $init_method_name))
-    {
-      if ($this->$init_method_name($params) === FALSE)
-        return;
-    }
+    if ($this->_do_action_perform($action_name, $params) === FALSE)
+      return;
 
-    // Perform
-    $perform_method_name = '_action_'.$action_name.'_'.$this->_get_method_name();
-    if (method_exists($this, $perform_method_name))
-    {
-      if ($this->$perform_method_name($params) === FALSE)
-        return;
-    }
-    else
-    {
-      throw new Kohana_Exception('Can\'t perform action.');
-    }
+    $this->_do_action_end($action_name, $params);
+  }
 
-    // End
-    $end_method_name = '_action_'.$action_name.'_end';
-    if (method_exists($this, $end_method_name))
-    {
-      if ($this->$end_method_name($params) === FALSE)
-        return;
-    }
-    $end_method_name = '_action_'.$action_name.'_end_'.$this->_get_method_name();
-    if (method_exists($this, $end_method_name))
-    {
-      if ($this->$end_method_name($params) === FALSE)
-        return;
-    }
+
+  /**
+   * Call action end methods (both global and specific to current method)
+   *
+   * @param string $action_name name of the action
+   * @param array  &$params     optional action parameters
+   *
+   * @return bool continue action process ?
+   */
+  protected function _do_action_end($action_name, array & $params = NULL)
+  {
+    if ($this->_call_action($action_name, 'end', 'global', $params) === FALSE)
+      return FALSE;
+
+    if ($this->_call_action($action_name, 'end', $this->_get_method_name(), $params) === FALSE)
+      return FALSE;
+
+    return TRUE;
+  }
+
+
+  /**
+   * Call action init methods (both global and specific to current method)
+   *
+   * @param string $action_name name of the action
+   * @param array  &$params     optional action parameters
+   *
+   * @return bool continue action process ?
+   */
+  protected function _do_action_init($action_name, array & $params = NULL)
+  {
+
+    if ($this->_call_action($action_name, 'init', 'global', $params) === FALSE)
+      return FALSE;
+
+    if ($this->_call_action($action_name, 'init', $this->_get_method_name(), $params) === FALSE)
+      return FALSE;
+
+    return TRUE;
+  }
+
+
+  /**
+   * Call action perform method
+   *
+   * @param string $action_name name of the action
+   * @param array  &$params     optional action parameters
+   *
+   * @return bool continue action process ?
+   */
+  protected function _do_action_perform($action_name, array & $params = NULL)
+  {
+    if ($this->_call_action($action_name, 'main', $this->_get_method_name(), $params) === FALSE)
+      return FALSE;
+
+    return TRUE;
   }
 
 
@@ -172,6 +236,31 @@ class Controller_Charougna_Dispatcher extends Controller
       unset($exception);
       return 'NO_ACTION';
     }
+  }
+
+
+  /**
+   * Returns the action's instance if configured
+   *
+   * @param string $name name of the action
+   *
+   * @return Dispatcher_Action|FALSE
+   */
+  protected function _get_action_instance($name)
+  {
+    if (isset($this->_action_instances[$name]))
+      return $this->_action_instances[$name];
+
+    // Instanciate
+    if (isset($this->_action_classnames[$name]))
+    {
+      $this->_instanciate_action($name);
+    }
+    else
+    {
+      $this->_action_instances[$name] = FALSE;
+    }
+    return $this->_get_action_instance($name);
   }
 
 
@@ -246,6 +335,33 @@ class Controller_Charougna_Dispatcher extends Controller
     }
 
     return 'unknown';
+  }
+
+
+  /**
+   * Instanciates the action's instance
+   *
+   * @param string $name name of the action
+   *
+   * @return null
+   *
+   * @throws Kohana_Exception Can't perform dispatcher's action:
+   *                          class :classname: does not exist
+   */
+  protected function _instanciate_action($name)
+  {
+    if ( ! class_exists($this->_action_classnames[$name]))
+    {
+      throw new Kohana_Exception(
+        'Can\'t perform dispatcher\'s action: '.
+        'class :classname: does not exist',
+        array(':classname' => $this->_action_classnames[$name])
+      );
+    }
+
+    $this->_action_instances[$name] = new $this->_action_classnames[$name];
+
+    $this->_action_instances[$name]->controller = $this;
   }
 
 
