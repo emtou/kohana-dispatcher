@@ -1,6 +1,6 @@
 <?php
 /**
- * Declares Charougna_Dispatcher controller
+ * Declares Dispatcher_Core
  *
  * PHP version 5
  *
@@ -11,13 +11,13 @@
  * @author    mtou <mtou@charougna.com>
  * @copyright 2011 mtou
  * @license   http://www.debian.org/misc/bsd.license BSD License (3 Clause)
- * @link      https://github.com/emtou/kohana-dispatcher/tree/master/classes/charougna/dispatcher.php
+ * @link      https://github.com/emtou/kohana-dispatcher/tree/master/classes/dispatcher/core.php
  */
 
 defined('SYSPATH') OR die('No direct access allowed.');
 
 /**
- * Provides Charougna_Dispatcher controller
+ * Provides Dispatcher_Core
  *
  * PHP version 5
  *
@@ -28,9 +28,9 @@ defined('SYSPATH') OR die('No direct access allowed.');
  * @author    mtou <mtou@charougna.com>
  * @copyright 2011 mtou
  * @license   http://www.debian.org/misc/bsd.license BSD License (3 Clause)
- * @link      https://github.com/emtou/kohana-dispatcher/tree/master/classes/charougna/dispatcher.php
+ * @link      https://github.com/emtou/kohana-dispatcher/tree/master/classes/dispatcher/core.php
  */
-class Controller_Charougna_Dispatcher extends Controller
+abstract class Dispatcher_Core extends Controller
 {
   const METHOD_UNKNOWN   = 0;
   const METHOD_GET       = 1;
@@ -38,8 +38,8 @@ class Controller_Charougna_Dispatcher extends Controller
   const METHOD_AJAX_GET  = 3;
   const METHOD_AJAX_POST = 4;
 
-  protected $_action_classnames  = array(); /** list of Dispatcher_ControllerAction class names */
-  protected $_action_instances   = array(); /** list of Dispatcher_ControllerAction instances */
+  protected $_action_classnames  = array(); /** list of Dispatcher_Action class names */
+  protected $_action_instances   = array(); /** list of Dispatcher_Action instances */
   protected $_dispatcher_actions = array();
 
 
@@ -109,7 +109,7 @@ class Controller_Charougna_Dispatcher extends Controller
    *
    * @param string $action_name      Action name
    * @param array  $allowed_methods  Methods
-   * @param string $action_classname Optional Dispatcher ControllerAction class name
+   * @param string $action_classname Optional Dispatcher_Action class name
    *
    * @return null
    */
@@ -311,7 +311,7 @@ class Controller_Charougna_Dispatcher extends Controller
   /**
    * Find calling method name
    *
-   * @param Controller_Dispatch::METHOD_* $method optional method
+   * @param Dispatcher::METHOD_* $method optional method
    *
    * @return string
    */
@@ -324,13 +324,13 @@ class Controller_Charougna_Dispatcher extends Controller
 
     switch ($method)
     {
-      case $this::METHOD_GET :
+      case self::METHOD_GET :
         return 'get';
-      case $this::METHOD_POST :
+      case self::METHOD_POST :
         return 'post';
-      case $this::METHOD_AJAX_GET :
+      case self::METHOD_AJAX_GET :
         return 'ajax_get';
-      case $this::METHOD_AJAX_POST :
+      case self::METHOD_AJAX_POST :
         return 'ajax_post';
     }
 
@@ -382,4 +382,4 @@ class Controller_Charougna_Dispatcher extends Controller
     return FALSE;
   }
 
-} // End class Charougna_Dispatcher
+} // End class Dispatcher_Core

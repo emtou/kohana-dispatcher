@@ -1,6 +1,6 @@
 <?php
 /**
- * Declares Dispatcher controller
+ * Declares Dispatcher
  *
  * PHP version 5
  *
@@ -17,7 +17,7 @@
 defined('SYSPATH') OR die('No direct access allowed.');
 
 /**
- * Provides Dispatcher controller
+ * Provides Dispatcher
  *
  * PHP version 5
  *
@@ -30,6 +30,6 @@ defined('SYSPATH') OR die('No direct access allowed.');
  * @license   http://www.debian.org/misc/bsd.license BSD License (3 Clause)
  * @link      https://github.com/emtou/kohana-dispatcher/tree/master/classes/dispatcher.php
  */
-class Controller_Dispatcher extends Controller_Charougna_Dispatcher
+abstract class Dispatcher extends Dispatcher_Core
 {
 }
