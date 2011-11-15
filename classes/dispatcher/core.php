@@ -38,10 +38,10 @@ abstract class Dispatcher_Core extends Controller
   const METHOD_AJAX_GET  = 3;
   const METHOD_AJAX_POST = 4;
 
-  protected $_action_classnames  = array(); /** list of Dispatcher_Action class names */
-  protected $_action_instances   = array(); /** list of Dispatcher_Action instances */
-  protected $_dispatcher_actions = array();
-
+  protected $_action_classnames    = array(); /** list of Dispatcher_Action class names */
+  protected $_action_instances     = array(); /** list of Dispatcher_Action instances */
+  protected $_dispatcher_actions   = array();
+  protected $_dispatcher_profiling = array(); /** list of Kohana Profiler groups */
 
   /**
    * Call specific action method
@@ -164,13 +164,18 @@ abstract class Dispatcher_Core extends Controller
    */
   protected function _do_action_end($action_name, array & $params = NULL)
   {
-    if ($this->_call_action($action_name, 'end', 'global', $params) === FALSE)
-      return FALSE;
+    $this->_dispatcher_profiler_start('end');
 
-    if ($this->_call_action($action_name, 'end', $this->_get_method_name(), $params) === FALSE)
-      return FALSE;
+    $continue = $this->_call_action($action_name, 'end', 'global', $params);
 
-    return TRUE;
+    if ($continue)
+    {
+      $continue = $this->_call_action($action_name, 'end', $this->_get_method_name(), $params);
+    }
+
+    $this->_dispatcher_profiler_stop('end');
+
+    return ($continue !== FALSE);
   }
 
 
@@ -184,14 +189,18 @@ abstract class Dispatcher_Core extends Controller
    */
   protected function _do_action_init($action_name, array & $params = NULL)
   {
+    $this->_dispatcher_profiler_start('init');
 
-    if ($this->_call_action($action_name, 'init', 'global', $params) === FALSE)
-      return FALSE;
+    $continue = $this->_call_action($action_name, 'init', 'global', $params);
 
-    if ($this->_call_action($action_name, 'init', $this->_get_method_name(), $params) === FALSE)
-      return FALSE;
+    if ($continue)
+    {
+      $continue = $this->_call_action($action_name, 'init', $this->_get_method_name(), $params);
+    }
 
-    return TRUE;
+    $this->_dispatcher_profiler_stop('init');
+
+    return ($continue !== FALSE);
   }
 
 
@@ -205,10 +214,13 @@ abstract class Dispatcher_Core extends Controller
    */
   protected function _do_action_perform($action_name, array & $params = NULL)
   {
-    if ($this->_call_action($action_name, 'main', $this->_get_method_name(), $params) === FALSE)
-      return FALSE;
+    $this->_dispatcher_profiler_start('main');
 
-    return TRUE;
+    $continue = $this->_call_action($action_name, 'main', $this->_get_method_name(), $params);
+
+    $this->_dispatcher_profiler_stop('main');
+
+    return ($continue !== FALSE);
   }
 
 
@@ -397,6 +409,38 @@ abstract class Dispatcher_Core extends Controller
     }
 
     return FALSE;
+  }
+
+
+  /**
+   * Start profiling dispatcher event
+   *
+   * @param string $name event's name
+   *
+   * @return null
+   */
+  protected function _dispatcher_profiler_start($name)
+  {
+    if (Kohana::$profiling === TRUE)
+    {
+      $this->_dispatcher_profiling[$name] = Profiler::start('Dispatcher', $name);
+    }
+  }
+
+
+  /**
+   * Stop profiling dispatcher event
+   *
+   * @param string $name event's name
+   *
+   * @return null
+   */
+  protected function _dispatcher_profiler_stop($name)
+  {
+    if (Kohana::$profiling === TRUE)
+    {
+      Profiler::stop($this->_dispatcher_profiling[$name]);
+    }
   }
 
 } // End class Dispatcher_Core
